@@ -1,0 +1,81 @@
+/*
+ * Author Marek Mosiewicz
+ */
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {  classpath ("org.ajoberstar:grgit:1.7.2")
+                    classpath ("de.undercouch:gradle-download-task:4.0.4")
+    }
+}
+
+
+plugins {
+    id "de.undercouch.download" version "4.0.4"
+    id "org.ajoberstar.grgit" version "1.7.2"
+}
+
+
+import org.ajoberstar.gradle.git.tasks.*
+import de.undercouch.gradle.tasks.download.Download
+
+def adempiereMetaDir = projectDir
+
+task cloneRepo {
+    ext.gitClone = { param1, param2 ->
+        dest = adempiereMetaDir+"/"+"sources"+"/"+param2;
+        if(!new File(dest).exists()) {
+            GitClone clone = new GitClone();
+            clone.setUri(param1);
+            clone.setDestinationPath(dest);
+            clone.setBare(false);
+            clone.cloneRepo();
+        }
+    }
+    doLast {
+        gitClone(p1, p2) // This will resolve 'myMethod' defined in task
+    }
+}
+
+task downloadAneExtractZip {
+    ext.downloadAneExtractZip = { param1, param2 ->
+        zipFileName = adempiereMetaDir + "/temp/" + param2 +".zip"
+        if(!new File(zipFileName).exists()) {
+            Download fetcher = new Download()
+            fetcher.setSrc(param1)
+            fetcher.setDest(zipFileName)
+            UnpackFilest = unzipper = new UnpackFiles()
+            unzipper.setFrom(zipFileName);
+            unzipper.setInto(adempiereMetaDir + "/servers/" + param2);
+        }
+    }
+
+    doLast {
+        downloadAneExtractZip(p1, p2) // This will resolve 'myMethod' defined in task
+    }
+}
+
+task initialize{
+    cloneRepo("adempiere","https://github.com/erpcya/adempiere-gRPC-Server.git")
+    cloneRepo("adempiere-grpc","https://github.com/adempiere/adempiere.git")
+    cloneRepo("adempiere-vue","https://github.com/adempiere/adempiere-vue.git")
+    downloadAneExtractZip("https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip","wildfly")
+    downloadAneExtractZip("https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip","tomcat")
+}
+//TODO configure new  instance to build and install
+task addInstance {
+
+}
+//TODO build all projects
+task build {
+
+}
+//TODO install all instances
+task install {
+
+}
+task pullAll {
+
+}
+task clean{
+
+}
