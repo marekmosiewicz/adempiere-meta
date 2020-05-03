@@ -19,25 +19,9 @@ plugins {
 }
 
 apply plugin: "org.ajoberstar.grgit"
-/*
-import org.ajoberstar.gradle.git.tasks.*
-import de.undercouch.gradle.tasks.download.Download
+apply plugin: "de.undercouch.download"
 
-task(cloneRepo,type: GitScmClone) {
-    ext.gitClone = { param1, param2 ->
-        dest = adempiereMetaDir+"/"+"sources"+"/"+param2;
-        if(!new File(dest).exists()) {
-            GitClone clone = new GitClone();
-            clone.setUri(param1);
-            clone.setDestinationPath(dest);
-            clone.setBare(false);
-            clone.cloneRepo();
-        }
-    }
-    doLast {
-        gitClone(p1, p2) // This will resolve 'myMethod' defined in task
-    }
-}
+/*
 
 task(downloadAneExtractZip) {
     ext.downloadAneExtractZip = { param1, param2 ->
@@ -77,39 +61,49 @@ def getTask(name){
     return tasks.findByPath(name)
 }
 
-public class DirUtils{
+public class FileUtils {
     public static ensureDirExists(String dir) {
         println "Creating directory " + dir
         File file = new File(dir)
         file.mkdirs()
     }
+    public static boolean isFileExists(String dir) {
+        File file = new File(dir)
+        return file.exists()
+    }
+
 }
 public class CloneRepoTask extends DefaultTask {
     String destination;
     String repoURL;
     @TaskAction
     public void doClone() {
-        DirUtils.ensureDirExists(destination)
+        FileUtils.ensureDirExists(destination)
         Object params = [dir: destination,uri:repoURL]
         Grgit.clone(params)
     }
 }
 def cloneRepo(String dest,String url,String dependencier){
-    String taskName = enlistTask(CloneRepoTask,dependencier)
-    Object task = getTask(taskName)
     String adDirName = adempiereMetaDir
     String workingDir = adDirName+'/sources/'+dest
-    task.destination = workingDir
-    task.repoURL = url
+    if(!FileUtils.isFileExists(workingDir+"/.git")) {
+        String taskName = enlistTask(CloneRepoTask, dependencier)
+        Object task = getTask(taskName)
+        task.destination = workingDir
+        task.repoURL = url
+    }
 }
-//TODO move repos to settings.gradle
+//TODO move repos to settings.gradle as list
 task(clone){
     cloneRepo("adempiere","https://github.com/adempiere/adempiere.git",'clone')
     cloneRepo("adempiere-grpc","https://github.com/erpcya/adempiere-gRPC-Server.git",'clone')
     cloneRepo("adempiere-vue","https://github.com/adempiere/adempiere-vue.git",'clone')
 }
+task(downloadAll){
+
+}
 task(initialize){
-    dependsOn clone
+    dependsOn clone,downloadAll
     //downloadAneExtractZip("https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip","wildfly")
     //downloadAneExtractZip("https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip","tomcat")
 }
