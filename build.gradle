@@ -1,111 +1,115 @@
 /*
- * Copyright (c) 2020 Marek Mosiewicz
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    Copyright (c) 2020 Marek Mosiewicz
  */
+
 buildscript {
     repositories {
         mavenCentral()
     }
     dependencies {
-//        classpath group: 'nebula', name: 'gradle-git-scm', version: '4.2.0'
         classpath group: 'org.ajoberstar.grgit', name: 'grgit-core', version: '3.0.0-beta.1'
-        classpath group: 'de.undercouch', name: 'gradle-download-task', version: '4.0.4'
+        classpath 'de.undercouch:gradle-download-task:4.0.0'
     }
 }
 plugins {
-  //  id "nebula.gradle-git-scm" version "4.2.0"
-    //id "com.netflix.nebula.gradle-git-scm-plugin" version "4.2.0"
-    id "de.undercouch.download" version "4.0.4"
+    id "de.undercouch.download" version "4.0.0"
     id "org.ajoberstar.grgit" version "3.0.0-beta.1"
 }
 
 apply plugin: "org.ajoberstar.grgit"
 apply plugin: "de.undercouch.download"
-
-/*
-
-task(downloadAneExtractZip) {
-    ext.downloadAneExtractZip = { param1, param2 ->
-        zipFileName = adempiereMetaDir + "/temp/" + param2 +".zip"
-        if(!new File(zipFileName).exists()) {
-            Download fetcher = new Download()
-            fetcher.setSrc(param1)
-            fetcher.setDest(zipFileName)
-            UnpackFilest unzipper = new UnpackFiles()
-            unzipper.setFrom(zipFileName);
-            unzipper.setInto(adempiereMetaDir + "/servers/" + param2);
-        }
-    }
-
-    doLast {
-        downloadAneExtractZip(p1, p2) // This will resolve 'myMethod' defined in task
-    }
-}
-*/
-ext{
-    adempiereMetaDir = rootProject.projectDir
+ext {
+    adempiereMetaDir = rootProject.projectDir.toString()
+    adempiereTempDir = rootProject.projectDir.toString()+"/temp"
     internalTaskCounter = 0
 }
+//importing scripts
+ext.us = new GroovyShell().parse(new File('scripts/gradle/utils.gradle'))
+
+
 
 import org.ajoberstar.grgit.*
+import de.undercouch.download.*
 
-def String enlistTask(type, String dependecier){
-    internalTaskCounter = internalTaskCounter + 1
-    String taskNameInter = "inter_task_"+internalTaskCounter+"_group_"+dependecier
-    Object task = tasks.create(taskNameInter, type)
-    if(dependecier!=null) {
-        tasks.findByPath(dependecier).dependsOn.add(task)
-    }
-    return taskNameInter
-}
-def getTask(name){
-    return tasks.findByPath(name)
-}
-
-public class FileUtils {
-    public static ensureDirExists(String dir) {
-        println "Creating directory " + dir
-        File file = new File(dir)
-        file.mkdirs()
-    }
-    public static boolean isFileExists(String dir) {
-        File file = new File(dir)
-        return file.exists()
-    }
-
-}
 public class CloneRepoTask extends DefaultTask {
     String destination;
     String repoURL;
     @TaskAction
     public void doClone() {
-        FileUtils.ensureDirExists(destination)
+        us.ensureDirExists(destination)
         Object params = [dir: destination,uri:repoURL]
         Grgit.clone(params)
     }
 }
+
+
+
 def cloneRepo(String dest,String url,String dependencier){
     String adDirName = adempiereMetaDir
     String workingDir = adDirName+'/sources/'+dest
-    if(!FileUtils.isFileExists(workingDir+"/.git")) {
-        String taskName = enlistTask(CloneRepoTask, dependencier)
-        Object task = getTask(taskName)
+    if(!us.isFileExists(workingDir+"/.git")) {
+        String taskName = us.enlistTask(CloneRepoTask, dependencier)
+        Object task = us.getTask(taskName)
         task.destination = workingDir
         task.repoURL = url
     }
 }
+
+
 //TODO move repos to settings.gradle as list
 task(clone){
     cloneRepo("adempiere","https://github.com/adempiere/adempiere.git",'clone')
     cloneRepo("adempiere-grpc","https://github.com/erpcya/adempiere-gRPC-Server.git",'clone')
     cloneRepo("adempiere-vue","https://github.com/adempiere/adempiere-vue.git",'clone')
 }
+//TODO move repos to settings.gradle as list
 task(downloadAll){
-
+    def arts = [["https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip","wildfly-19.0.0.Final"],
+     ["https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip","apache-tomcat-10.0.0-M4"]]
+    us.ensureDirExists(adempiereTempDir)
+    arts.collect {
+        it
+    }.eachWithIndex {operation, index ->
+        task "download_${index}"(type: Download) {
+            def targetFileName = adempiereTempDir + "/" + operation[1]+".zip"
+            src operation[0]
+            dest targetFileName
+            enabled = ! us.isFileExists(targetFileName.toString())
+        }
+    }
+    arts.collect{
+            it
+    }.eachWithIndex {operation, index ->
+        task "extract_${index}"(type: Copy) {
+            def zipFile = file(adempiereTempDir + "/" + operation[1]+".zip")
+            def outputDir = file(adempiereMetaDir + "/servers")
+            from zipTree(zipFile)
+            into outputDir
+            enabled = ! us.isFileExists(outputDir.toString()+"/"+operation[1])
+        }
+    }
+    arts.collect{
+        it
+    }.eachWithIndex { operation, index ->
+        tasks.findByPath('downloadAll').dependsOn.add("download_"+index)
+        tasks.findByPath('downloadAll').dependsOn.add("extract_"+index)
+    }
 }
 task(initialize){
     dependsOn clone,downloadAll
-    //downloadAneExtractZip("https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip","wildfly")
-    //downloadAneExtractZip("https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip","tomcat")
 }
 //TODO configure new  instance to build and install
 task(addInstance) {
@@ -131,6 +135,9 @@ task(applyPatch) {
 
 }
 task(clean){
+
+}
+task(reset){
 
 }
 defaultTasks 'initialize'

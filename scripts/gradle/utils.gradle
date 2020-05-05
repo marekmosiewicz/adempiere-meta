@@ -14,5 +14,27 @@
 
     Copyright (c) 2020 Marek Mosiewicz
  */
+def String enlistTask(type, String dependecier){
+    internalTaskCounter = internalTaskCounter + 1
+    String taskNameInter = "inter_task_"+internalTaskCounter+"_group_"+dependecier
+    Object task = tasks.create(taskNameInter, type)
+    if(dependecier!=null) {
+        tasks.findByPath(dependecier).dependsOn.add(task)
+    }
+    return taskNameInter
+}
+def getTask(name){
+    return tasks.findByPath(name)
+}
 
-rootProject.name = 'Adempiere Meta Project'
+def void ensureDirExists(String dir) {
+        println "Creating directory " + dir
+        File file = new File(dir)
+        file.mkdirs()
+}
+def boolean isFileExists(String dir) {
+        File file = new File(dir)
+        return file.exists()
+}
+
+
