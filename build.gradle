@@ -34,7 +34,6 @@ apply plugin: "de.undercouch.download"
 ext {
     adempiereMetaDir = rootProject.projectDir.toString()
     adempiereTempDir = rootProject.projectDir.toString()+"/temp"
-    internalTaskCounter = 0
 }
 //importing scripts
 ext.us = new GroovyShell().parse(new File('scripts/gradle/utils.gradle'))
@@ -44,36 +43,32 @@ ext.us = new GroovyShell().parse(new File('scripts/gradle/utils.gradle'))
 import org.ajoberstar.grgit.*
 import de.undercouch.download.*
 
-public class CloneRepoTask extends DefaultTask {
-    String destination;
-    String repoURL;
-    @TaskAction
-    public void doClone() {
-        us.ensureDirExists(destination)
-        Object params = [dir: destination,uri:repoURL]
-        Grgit.clone(params)
-    }
-}
-
-
-
-def cloneRepo(String dest,String url,String dependencier){
-    String adDirName = adempiereMetaDir
-    String workingDir = adDirName+'/sources/'+dest
-    if(!us.isFileExists(workingDir+"/.git")) {
-        String taskName = us.enlistTask(CloneRepoTask, dependencier)
-        Object task = us.getTask(taskName)
-        task.destination = workingDir
-        task.repoURL = url
-    }
-}
-
-
 //TODO move repos to settings.gradle as list
 task(clone){
-    cloneRepo("adempiere","https://github.com/adempiere/adempiere.git",'clone')
-    cloneRepo("adempiere-grpc","https://github.com/erpcya/adempiere-gRPC-Server.git",'clone')
-    cloneRepo("adempiere-vue","https://github.com/adempiere/adempiere-vue.git",'clone')
+    def repositories =[["adempiere","https://github.com/adempiere/adempiere.git"],
+                        ["adempiere-grpc","https://github.com/erpcya/adempiere-gRPC-Server.git"],
+                        ["adempiere-vue","https://github.com/adempiere/adempiere-vue.git"]]
+
+    repositories.collect {
+        it
+    }.eachWithIndex {operation, index ->
+        task "clone_${index}" {
+            def adDirName = adempiereMetaDir
+            def workingDir = adDirName + '/sources/' + operation[0]
+            doLast {
+                us.ensureDirExists(workingDir)
+                Object props = [dir:workingDir,uri:operation[1]]
+                Grgit.clone(props)
+            }
+            enabled = !us.isFileExists(workingDir + "/.git")
+        }
+    }
+    repositories.collect{
+        it
+    }.eachWithIndex { operation, index ->
+        tasks.findByPath('clone').dependsOn.add("clone_"+index)
+    }
+
 }
 //TODO move repos to settings.gradle as list
 task(downloadAll){
