@@ -133,13 +133,36 @@ task(buildClassic){
         t.baseDir = file(adempiereMetaDir + "/sources/adempiere")
     }
 }
+task(prepareGRPCServer, type: Copy){
+    def grpcLibPath = adempiereMetaDir+"/sources/adempiere-grpc/dependences"
+    //copy ADempiere lib to GRPC build path
+    us.ensureDirExists(grpcLibPath)
+    from adempiereHome + "/lib/Adempiere.jar"
+    into grpcLibPath
+//    enabled = ! us.isFileExists(outputDir.toString()+"/"+operation[1])
+
+}
+task(buildGRPCServer, dependsOn:prepareGRPCServer){
+    def gradleTask = "installDist"
+    def artefactBuild = project.tasks.create([name: "grpcserverscript", type: GradleBuild])
+    artefactBuild.buildFile = project.file(adempiereMetaDir+"/sources/adempiere-grpc/build.gradle")
+    artefactBuild.tasks = [gradleTask]
+    tasks.findByPath('buildGRPCServer').dependsOn.add("grpcserverscript")
+}
+
+task(deliverGRPCServer, type: Copy, dependsOn: buildGRPCServer){
+    //copy ADempiere lib to GRPC build path
+    from adempiereMetaDir + "/sources/adempiere-grpc/build/libs/*"
+    into adempiereMetaDir+"/home"
+}
+
 task(buildAdempiere){
     def adempiereHome = adempiereMetaDir+"/home/Adempiere"
     def adempiereInstall = adempiereMetaDir+"/home"
     us.ensureDirExists(adempiereHome.toString())
     us.ensureDirExists(adempiereInstall.toString())
+    dependsOn 'buildClassic'/*,'ant-complete'*/,buildGRPCServer
 
-    dependsOn 'buildClassic','ant-complete'
 }
 task(build) {
     dependsOn 'initialize','buildAdempiere'
