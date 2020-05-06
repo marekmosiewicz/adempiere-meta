@@ -110,9 +110,23 @@ task(initialize){
 task(addInstance) {
 
 }
-//TODO build all projects
+task(buildClassic){
+    //ant.importBuild adempiereMetaDir+"/sources/adempiere/utils_dev/build.xml"
+    ant.importBuild(adempiereMetaDir+'/sources/adempiere/utils_dev/build.xml') { antTargetName ->
+        'ant-' + antTargetName
+    }
+    ant.buildDir = adempiereMetaDir + "/sources/adempiere"
+    //workaround for https://issues.gradle.org/browse/GRADLE-2039
+    //set base dir
+    tasks.withType(AntTarget) { t ->
+        t.baseDir = file(adempiereMetaDir + "/sources/adempiere")
+    }
+}
+task(buildAdempiere){
+    dependsOn 'buildClassic','ant-complete'
+}
 task(build) {
-
+    dependsOn 'initialize','buildAdempiere'
 }
 //TODO build all projects
 task(deliverInstance) {
@@ -135,4 +149,4 @@ task(clean){
 task(reset){
 
 }
-defaultTasks 'initialize'
+defaultTasks 'build'
