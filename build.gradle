@@ -161,11 +161,26 @@ task(buildAdempiere){
     def adempiereInstall = adempiereMetaDir+"/home"
     us.ensureDirExists(adempiereHome.toString())
     us.ensureDirExists(adempiereInstall.toString())
-    dependsOn 'buildClassic'/*,'ant-complete'*/,buildGRPCServer
+    dependsOn 'buildClassic','ant-complete'
 
 }
+task (installVue,type: Exec){
+    workingDir = adempiereMetaDir +"/sources/adempiere-vue/"
+    commandLine 'npm', 'install'
+}
+task (runVueDev,type: Exec){
+    workingDir = adempiereMetaDir +"/sources/adempiere-vue/"
+    commandLine 'npm', 'run', 'dev'
+}
+
+task buildVue {
+    dependsOn 'installVue'
+}
 task(build) {
-    dependsOn 'initialize','buildAdempiere'
+    dependsOn 'initialize'
+    dependsOn 'buildAdempiere'
+    dependsOn 'buildGRPCServer'
+    dependsOn 'buildVue'
 }
 //TODO build all projects
 task(deliverInstance) {
