@@ -33,7 +33,12 @@ apply plugin: "org.ajoberstar.grgit"
 apply plugin: "de.undercouch.download"
 ext {
     adempiereMetaDir = rootProject.projectDir.toString()
-    adempiereTempDir = rootProject.projectDir.toString()+"/temp"
+
+    adempiereTempDir = adempiereMetaDir + "/temp"
+
+    adempiereHome = adempiereMetaDir + "/home/Adempiere"
+    adempiereInstall = adempiereMetaDir + "/home"
+
 }
 //importing scripts
 ext.us = new GroovyShell().parse(new File('scripts/gradle/utils.gradle'))
@@ -110,19 +115,30 @@ task(initialize){
 task(addInstance) {
 
 }
+
 task(buildClassic){
+
+    ant.properties["env.ADEMPIERE_HOME"] = adempiereHome
+    //It adds Adempiere folder there so it is not ADEMPIERE_HOME
+    ant.properties["env.ADEMPIERE_ROOT"] = adempiereInstall
+    ant.properties["env.ADEMPIERE_INSTALL"] = adempiereInstall
+
     //ant.importBuild adempiereMetaDir+"/sources/adempiere/utils_dev/build.xml"
     ant.importBuild(adempiereMetaDir+'/sources/adempiere/utils_dev/build.xml') { antTargetName ->
         'ant-' + antTargetName
     }
-    ant.buildDir = adempiereMetaDir + "/sources/adempiere"
-    //workaround for https://issues.gradle.org/browse/GRADLE-2039
     //set base dir
+    //workaround for https://issues.gradle.org/browse/GRADLE-2039
     tasks.withType(AntTarget) { t ->
         t.baseDir = file(adempiereMetaDir + "/sources/adempiere")
     }
 }
 task(buildAdempiere){
+    def adempiereHome = adempiereMetaDir+"/home/Adempiere"
+    def adempiereInstall = adempiereMetaDir+"/home"
+    us.ensureDirExists(adempiereHome.toString())
+    us.ensureDirExists(adempiereInstall.toString())
+
     dependsOn 'buildClassic','ant-complete'
 }
 task(build) {
