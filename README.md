@@ -8,9 +8,11 @@ to have ability to develop with up to date tools.
 The basic idea is to have shadow ADemepire with new features which can be later integrated into
 production
 
+
+On Linux (you need to have Node.js installed)
 ## Build
 ``` bash
 ./gradlew
 ```
 
-Contributions are welcome ...
+Contributions and feedback are welcome ...
