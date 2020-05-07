@@ -8,9 +8,11 @@ to have ability to develop with up to date tools.
 The basic idea is to have shadow ADemepire with new features which can be later integrated into
 production
 
+## What it does
+Currently it fetches ADempiere, ADempiere Vue and ADempiere gRPC server from github. Builds it and provides result to "home" directory in project structure.
 
-On Linux (you need to have Node.js installed)
-## Build
+## How to use it
+To build project (you need to have Node.js installed). 
 ``` bash
 ./gradlew
 ```
