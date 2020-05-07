@@ -142,18 +142,19 @@ task(prepareGRPCServer, type: Copy){
 //    enabled = ! us.isFileExists(outputDir.toString()+"/"+operation[1])
 
 }
-task(buildGRPCServer, dependsOn:prepareGRPCServer){
+task(compileGRPCServer, dependsOn:prepareGRPCServer){
     def gradleTask = "installDist"
     def artefactBuild = project.tasks.create([name: "grpcserverscript", type: GradleBuild])
     artefactBuild.buildFile = project.file(adempiereMetaDir+"/sources/adempiere-grpc/build.gradle")
     artefactBuild.tasks = [gradleTask]
-    tasks.findByPath('buildGRPCServer').dependsOn.add("grpcserverscript")
+    tasks.findByPath('compileGRPCServer').dependsOn.add("grpcserverscript")
 }
 
-task(deliverGRPCServer, type: Copy, dependsOn: buildGRPCServer){
+task(buildGRPCServer, type: Copy, dependsOn: compileGRPCServer){
     //copy ADempiere lib to GRPC build path
-    from adempiereMetaDir + "/sources/adempiere-grpc/build/libs/*"
+    from adempiereMetaDir + "/sources/adempiere-grpc/build/libs"
     into adempiereMetaDir+"/home"
+    include "*.jar"
 }
 
 task(buildAdempiere){
@@ -168,13 +169,27 @@ task (installVue,type: Exec){
     workingDir = adempiereMetaDir +"/sources/adempiere-vue/"
     commandLine 'npm', 'install'
 }
+task (distVue, type: Copy, dependsOn: installVue){
+    //copy ADempiere lib to GRPC build path
+    us.ensureDirExists(adempiereMetaDir+"/home/adempiere-vue")
+    from adempiereMetaDir + "/sources/adempiere-vue"
+    into adempiereMetaDir+"/home/adempiere-vue"
+    exclude ".git/**"
+    exclude ".githib/**"
+    exclude "build/**"
+    exclude "src/**"
+    exclude "tests/**"
+
+}
+
+
 task (runVueDev,type: Exec){
-    workingDir = adempiereMetaDir +"/sources/adempiere-vue/"
+    workingDir = adempiereMetaDir+"/home/adempiere-vue/dist"
     commandLine 'npm', 'run', 'dev'
 }
 
 task buildVue {
-    dependsOn 'installVue'
+    dependsOn 'distVue'
 }
 task(build) {
     dependsOn 'initialize'
