@@ -1,0 +1,11 @@
+#TODO
+
+Create utils to install npm
+Function getSourceLocation() - resolving sources/project dir
+Refactoring. Split into modules.
+Alternative build for ADempiere with Gradle
+Configuring instances to install
+Installing ADempiere into server (Tomcat)
+Investigate migrating zkwebui to ZK 9 (check if missing classes have replacement)
+Installing on JDK 11
+Incremental builds
