@@ -13,6 +13,7 @@
 @rem See the License for the specific language governing permissions and
 @rem limitations under the License.
 @rem
+@rem This files comes from Gradle Project (Is it GPL3 compatible ?)
 
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################

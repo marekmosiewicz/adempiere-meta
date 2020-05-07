@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+# This files comes from Gradle Project (Is it GPL3 compatible ?)
 ##############################################################################
 ##
 ##  Gradle start up script for UN*X
