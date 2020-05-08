@@ -12,7 +12,7 @@ production
 Currently it fetches ADempiere, ADempiere Vue and ADempiere gRPC server from github. Builds it and provides result to "home" directory in project structure.
 
 ## How to use it
-To build project (you need to have Node.js installed). 
+To build project (you need to have Node.js installed for building adempiere-vue module). 
 ``` bash
 ./gradlew
 ```
