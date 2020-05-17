@@ -14,29 +14,27 @@
 
     Copyright (c) 2020 Marek Mosiewicz
  */
-internalTaskCounter = 0
+task(copyVue, type: Copy){
+        us.ensureDirExists(paths.getDeliveryDir() + "/adempiere-vue")
+        from paths.getSourceDir("adempiere-vue")
+        into paths.getDeliveryDir() + "/adempiere-vue"
+        exclude ".git/**"
+        exclude ".githib/**"
 
-def String enlistTask(type, String dependecier){
-    internalTaskCounter = internalTaskCounter + 1
-    String taskNameInter = "inter_task_"+internalTaskCounter+"_group_"+dependecier
-    Object task = tasks.create(taskNameInter, type)
-    if(dependecier!=null) {
-        tasks.findByPath(dependecier).dependsOn.add(task)
-    }
-    return taskNameInter
-}
-def getTask(name){
-    return tasks.findByPath(name)
 }
 
-def void ensureDirExists(String dir) {
-        println "Creating directory " + dir
-        File file = new File(dir)
-        file.mkdirs()
+task (compile,type: Exec,dependsOn: copyVue){
+        workingDir = paths.getDeliveryDir() + "/adempiere-vue"
+        commandLine 'npm', 'install'
 }
-def boolean isFileExists(String dir) {
-        File file = new File(dir)
-        return file.exists()
+
+task (build, type: Exec, dependsOn: compile){
+        workingDir = paths.getDeliveryDir() + "/adempiere-vue"
+        commandLine 'npm', 'run', 'build:stage'
 }
 
 
+task (run,type: Exec){
+    workingDir = paths.getDeliveryDir()+"/adempiere-vue/dist"
+    commandLine 'npm', 'run', 'dev'
+}

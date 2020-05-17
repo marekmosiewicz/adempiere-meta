@@ -15,5 +15,19 @@
     Copyright (c) 2020 Marek Mosiewicz
  */
 
-rootProject.name = 'Adempiere Meta Project'
-include 'scripts:adempiere','scripts:adempiere-grpc',':scripts:adempiere-vue'
+//https://askubuntu.com/questions/459402/how-to-know-if-the-running-platform-is-ubuntu-or-centos-with-help-of-a-bash-scri
+def installPackage(String packageName) {
+    String command = null
+    //It is Debian based machine
+    if(us.isFileExists('/etc/lsb-release')){
+        command = 'apt'
+    }
+    //It is Red Hat based machine
+    if (us.isFileExists('/etc/redhat-release')){
+        command ='yum'
+    }
+
+}
+def ensurePackage(String packageName){
+
+}

@@ -15,5 +15,22 @@
     Copyright (c) 2020 Marek Mosiewicz
  */
 
-rootProject.name = 'Adempiere Meta Project'
-include 'scripts:adempiere','scripts:adempiere-grpc',':scripts:adempiere-vue'
+
+    def getRootDir(){
+        return rootBaseDir
+    }
+    def getSourceDir(String moduleName) {
+        return rootBaseDir + "/sources/" + moduleName
+    }
+
+    def getTempDir() {
+        return rootBaseDir + "/temp"
+    }
+
+    def getDeliveryDir() {
+        return rootBaseDir + "/home"
+    }
+
+    def getAdempiereHome() {
+        return rootBaseDir + "/home/Adempiere"
+    }

@@ -1,0 +1,41 @@
+/*
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    Copyright (c) 2020 Marek Mosiewicz
+ */
+
+task(prepare, type: Copy){
+        def grpcLibPath = paths.getSourceDir("adempiere-grpc") + "/dependences"
+        //copy ADempiere lib to GRPC build path
+        us.ensureDirExists(grpcLibPath)
+        from paths.getDeliveryDir() + "/Adempiere/lib/Adempiere.jar"
+        into grpcLibPath
+}
+task(spawn, dependsOn:prepare){
+
+        def gradleTask = "installDist"
+        def artefactBuild = project.tasks.create([name: "grpc-server-compile", type: GradleBuild])
+        artefactBuild.buildFile = project.file(paths.getSourceDir("adempiere-grpc") + "/build.gradle")
+        artefactBuild.tasks = [gradleTask]
+        tasks.findByPath('spawn').dependsOn.add("grpc-server-compile")
+}
+
+task(build, type: Copy, dependsOn: spawn){
+    doLast {
+        //copy ADempiere lib to GRPC build path
+        from paths.getSourceDir("adempiere-grpc") + "build/libs"
+        into paths.getDeliveryDir()
+        include "*.jar"
+    }
+}

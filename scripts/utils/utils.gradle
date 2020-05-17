@@ -15,5 +15,13 @@
     Copyright (c) 2020 Marek Mosiewicz
  */
 
-rootProject.name = 'Adempiere Meta Project'
-include 'scripts:adempiere','scripts:adempiere-grpc',':scripts:adempiere-vue'
+def void ensureDirExists(String dir) {
+        File file = new File(dir)
+        file.mkdirs()
+}
+def boolean isFileExists(String dir) {
+        File file = new File(dir)
+        return file.exists()
+}
+
+

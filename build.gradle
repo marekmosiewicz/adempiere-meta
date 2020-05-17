@@ -31,191 +31,77 @@ plugins {
 
 apply plugin: "org.ajoberstar.grgit"
 apply plugin: "de.undercouch.download"
-ext {
-    adempiereMetaDir = rootProject.projectDir.toString()
 
-    adempiereTempDir = adempiereMetaDir + "/temp"
-
-    adempiereHome = adempiereMetaDir + "/home/Adempiere"
-    adempiereInstall = adempiereMetaDir + "/home"
-
-}
 //importing scripts
-ext.us = new GroovyShell().parse(new File('scripts/gradle/utils.gradle'))
+Binding binding = new Binding();
+binding.setProperty('rootBaseDir', rootProject.projectDir.toString())
 
-
+ext.us = new GroovyShell(binding).parse(new File('scripts/utils/utils.gradle'))
+ext.paths = new GroovyShell(binding).parse(new File('scripts/utils/paths.gradle'))
+//we need to initalize it as it seems that there is no access to project
+// properties form script
 
 import org.ajoberstar.grgit.*
 import de.undercouch.download.*
 
-//TODO move repos to settings.gradle as list
-task(clone){
-    def repositories =[["adempiere","https://github.com/adempiere/adempiere.git"],
-                        ["adempiere-grpc","https://github.com/erpcya/adempiere-gRPC-Server.git"],
-                        ["adempiere-vue","https://github.com/adempiere/adempiere-vue.git"]]
+
+task(clone) {
+    //we clone in configuration phase as we need build scripts later
+    def repositories = [["adempiere", "https://github.com/adempiere/adempiere.git"],
+                        ["adempiere-grpc", "https://github.com/erpcya/adempiere-gRPC-Server.git"],
+                        ["adempiere-vue", "https://github.com/adempiere/adempiere-vue.git"]]
 
     repositories.collect {
         it
-    }.eachWithIndex {operation, index ->
-        task "clone_${index}" {
-            def adDirName = adempiereMetaDir
-            def workingDir = adDirName + '/sources/' + operation[0]
-            doLast {
-                us.ensureDirExists(workingDir)
-                Object props = [dir:workingDir,uri:operation[1]]
-                Grgit.clone(props)
-            }
-            enabled = !us.isFileExists(workingDir + "/.git")
-        }
-    }
-    repositories.collect{
-        it
     }.eachWithIndex { operation, index ->
-        tasks.findByPath('clone').dependsOn.add("clone_"+index)
+        String workingDir = paths.getSourceDir(operation[0])
+        if (!us.isFileExists(workingDir + "/.git")) {
+            println "Cloning "+operation[1]
+            us.ensureDirExists(workingDir)
+            Object props = [dir: workingDir, uri: operation[1]]
+            Grgit.clone(props)
+        }
     }
 
 }
 //TODO move repos to settings.gradle as list
-task(downloadAll){
-    def arts = [["https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip","wildfly-19.0.0.Final"],
-     ["https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip","apache-tomcat-10.0.0-M4"]]
-    us.ensureDirExists(adempiereTempDir)
+task(downloadAll) {
+    def arts = [["https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip", "wildfly-19.0.0.Final"],
+                ["https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip", "apache-tomcat-10.0.0-M4"]]
+    us.ensureDirExists(paths.getTempDir())
+    //download to temp dir
     arts.collect {
         it
-    }.eachWithIndex {operation, index ->
+    }.eachWithIndex { operation, index ->
         task "download_${index}"(type: Download) {
-            def targetFileName = adempiereTempDir + "/" + operation[1]+".zip"
+            def targetFileName = paths.getTempDir() + "/" + operation[1] + ".zip"
             src operation[0]
             dest targetFileName
-            enabled = ! us.isFileExists(targetFileName.toString())
+            enabled = !us.isFileExists(targetFileName.toString())
         }
     }
-    arts.collect{
-            it
-    }.eachWithIndex {operation, index ->
-        task "extract_${index}"(type: Copy) {
-            def zipFile = file(adempiereTempDir + "/" + operation[1]+".zip")
-            def outputDir = file(adempiereMetaDir + "/servers")
-            from zipTree(zipFile)
-            into outputDir
-            enabled = ! us.isFileExists(outputDir.toString()+"/"+operation[1])
-        }
-    }
-    arts.collect{
+    //extract
+    arts.collect {
         it
     }.eachWithIndex { operation, index ->
-        tasks.findByPath('downloadAll').dependsOn.add("download_"+index)
-        tasks.findByPath('downloadAll').dependsOn.add("extract_"+index)
+        task "extract_${index}"(type: Copy) {
+            def zipFile = file(paths.getTempDir() + "/" + operation[1] + ".zip")
+            def outputDir = file(paths.getRootDir() + "/servers")
+            from zipTree(zipFile)
+            into outputDir
+            enabled = !us.isFileExists(outputDir.toString() + "/" + operation[1])
+        }
+    }
+    arts.collect {
+        it
+    }.eachWithIndex { operation, index ->
+        tasks.findByPath('downloadAll').dependsOn.add("download_" + index)
+        tasks.findByPath('downloadAll').dependsOn.add("extract_" + index)
     }
 }
-task(initialize){
-    dependsOn clone,downloadAll
+task(initalize) {
+    dependsOn clone
+    dependsOn downloadAll
 }
-//TODO configure new  instance to build and install
-task(addInstance) {
-
-}
-
-task(buildClassic){
-
-    ant.properties["env.ADEMPIERE_HOME"] = adempiereHome
-    //It adds Adempiere folder there so it is not ADEMPIERE_HOME
-    ant.properties["env.ADEMPIERE_ROOT"] = adempiereInstall
-    ant.properties["env.ADEMPIERE_INSTALL"] = adempiereInstall
-
-    //ant.importBuild adempiereMetaDir+"/sources/adempiere/utils_dev/build.xml"
-    ant.importBuild(adempiereMetaDir+'/sources/adempiere/utils_dev/build.xml') { antTargetName ->
-        'ant-' + antTargetName
-    }
-    //set base dir
-    //workaround for https://issues.gradle.org/browse/GRADLE-2039
-    tasks.withType(AntTarget) { t ->
-        t.baseDir = file(adempiereMetaDir + "/sources/adempiere")
-    }
-}
-task(prepareGRPCServer, type: Copy){
-    def grpcLibPath = adempiereMetaDir+"/sources/adempiere-grpc/dependences"
-    //copy ADempiere lib to GRPC build path
-    us.ensureDirExists(grpcLibPath)
-    from adempiereHome + "/lib/Adempiere.jar"
-    into grpcLibPath
-//    enabled = ! us.isFileExists(outputDir.toString()+"/"+operation[1])
-
-}
-task(compileGRPCServer, dependsOn:prepareGRPCServer){
-    def gradleTask = "installDist"
-    def artefactBuild = project.tasks.create([name: "grpcserverscript", type: GradleBuild])
-    artefactBuild.buildFile = project.file(adempiereMetaDir+"/sources/adempiere-grpc/build.gradle")
-    artefactBuild.tasks = [gradleTask]
-    tasks.findByPath('compileGRPCServer').dependsOn.add("grpcserverscript")
-}
-
-task(buildGRPCServer, type: Copy, dependsOn: compileGRPCServer){
-    //copy ADempiere lib to GRPC build path
-    from adempiereMetaDir + "/sources/adempiere-grpc/build/libs"
-    into adempiereMetaDir+"/home"
-    include "*.jar"
-}
-
-task(buildAdempiere){
-    def adempiereHome = adempiereMetaDir+"/home/Adempiere"
-    def adempiereInstall = adempiereMetaDir+"/home"
-    us.ensureDirExists(adempiereHome.toString())
-    us.ensureDirExists(adempiereInstall.toString())
-    dependsOn 'buildClassic','ant-complete'
-
-}
-task (installVue,type: Exec){
-    workingDir = adempiereMetaDir +"/sources/adempiere-vue/"
-    commandLine 'npm', 'install'
-}
-task (distVue, type: Copy, dependsOn: installVue){
-    //copy ADempiere lib to GRPC build path
-    us.ensureDirExists(adempiereMetaDir+"/home/adempiere-vue")
-    from adempiereMetaDir + "/sources/adempiere-vue"
-    into adempiereMetaDir+"/home/adempiere-vue"
-    exclude ".git/**"
-    exclude ".githib/**"
-    exclude "build/**"
-    exclude "src/**"
-    exclude "tests/**"
-
-}
-
-
-task (runVueDev,type: Exec){
-    workingDir = adempiereMetaDir+"/home/adempiere-vue/dist"
-    commandLine 'npm', 'run', 'dev'
-}
-
-task buildVue {
-    dependsOn 'distVue'
-}
-task(build) {
-    dependsOn 'initialize'
-    dependsOn 'buildAdempiere'
-    dependsOn 'buildGRPCServer'
-    dependsOn 'buildVue'
-}
-//TODO build all projects
-task(deliverInstance) {
-
-}
-
-//TODO install all instances
-task install {
-
-}
-task(pullAll) {
-
-}
-task(applyPatch) {
-
-}
-task(clean){
-
-}
-task(reset){
-
-}
+task(build, dependsOn: initalize) {}
 defaultTasks 'build'

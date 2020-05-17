@@ -1,0 +1,42 @@
+/*
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    Copyright (c) 2020 Marek Mosiewicz
+ */
+
+task('addAntTasks') {
+    ant.properties["env.ADEMPIERE_HOME"] = paths.getAdempiereHome()
+    //It adds Adempiere folder there so it is not ADEMPIERE_HOME
+    ant.properties["env.ADEMPIERE_ROOT"] = paths.getDeliveryDir()
+    ant.properties["env.ADEMPIERE_INSTALL"] = paths.getDeliveryDir()
+
+    //ant.importBuild adempiereMetaDir+"/sources/adempiere/utils_dev/build.xml"
+    ant.importBuild(paths.getSourceDir("adempiere") + '/utils_dev/build.xml') { antTargetName ->
+        'ant-' + antTargetName
+    }
+    //set base dir
+    //workaround for https://issues.gradle.org/browse/GRADLE-2039
+    tasks.withType(AntTarget) { t ->
+        t.baseDir = file(paths.getSourceDir("adempiere"))
+    }
+    //tasks.findByPath('build').dependsOn.add('ant-complete')
+
+}
+
+task('build') {
+
+    us.ensureDirExists(paths.getAdempiereHome())
+    us.ensureDirExists(paths.getDeliveryDir())
+    dependsOn 'addAntTasks','ant-complete'
+}
