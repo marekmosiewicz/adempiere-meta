@@ -15,18 +15,18 @@
     Copyright (c) 2020 Marek Mosiewicz
  */
 
-task(prepare, type: Copy){
-        def grpcLibPath = paths.getSourceDir("adempiere-grpc") + "/dependences"
+task(copyLibs, type: Copy){
+        def grpcLibPath = paths.getSourceDir("grpc-server") + "/dependences"
         //copy ADempiere lib to GRPC build path
         us.ensureDirExists(grpcLibPath)
         from paths.getDeliveryDir() + "/Adempiere/lib/Adempiere.jar"
         into grpcLibPath
 }
-task(spawn, dependsOn:prepare){
+task(spawn, dependsOn:copyLibs){
 
         def gradleTask = "installDist"
         def artefactBuild = project.tasks.create([name: "grpc-server-compile", type: GradleBuild])
-        artefactBuild.buildFile = project.file(paths.getSourceDir("adempiere-grpc") + "/build.gradle")
+        artefactBuild.buildFile = project.file(paths.getSourceDir("grpc-server") + "/build.gradle")
         artefactBuild.tasks = [gradleTask]
         tasks.findByPath('spawn').dependsOn.add("grpc-server-compile")
 }
@@ -34,7 +34,7 @@ task(spawn, dependsOn:prepare){
 task(build, type: Copy, dependsOn: spawn){
     doLast {
         //copy ADempiere lib to GRPC build path
-        from paths.getSourceDir("adempiere-grpc") + "build/libs"
+        from paths.getSourceDir("grpc-server") + "build/libs"
         into paths.getDeliveryDir()
         include "*.jar"
     }

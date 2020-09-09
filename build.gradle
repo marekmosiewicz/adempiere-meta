@@ -48,7 +48,10 @@ import de.undercouch.download.*
 task(clone) {
     //we clone in configuration phase as we need build scripts later
     def repositories = [["adempiere", "https://github.com/adempiere/adempiere.git"],
-                        ["adempiere-grpc", "https://github.com/erpcya/adempiere-gRPC-Server.git"],
+                        ["grpc-server", "https://github.com/erpcya/adempiere-gRPC-Server.git"],
+                        ["grpc-client-data", "https://github.com/erpcya/gRPC-Data-Client.git"],
+                        ["grpc-client-enrollemnt", "https://github.com/erpcya/gRPC-Enrollment-Client.git"],
+                        ["grpc-client-dictionary", "https://github.com/erpcya/gRPC-Dictionary-Client.git"],
                         ["adempiere-vue", "https://github.com/adempiere/adempiere-vue.git"]]
 
     repositories.collect {

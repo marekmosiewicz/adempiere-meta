@@ -16,4 +16,4 @@
  */
 
 rootProject.name = 'Adempiere Meta Project'
-include 'scripts:adempiere','scripts:adempiere-grpc',':scripts:adempiere-vue'
+include 'scripts:adempiere','scripts:grpc-server',':scripts:adempiere-vue'
