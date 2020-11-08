@@ -34,10 +34,11 @@ apply plugin: "de.undercouch.download"
 
 //importing scripts
 Binding binding = new Binding();
-binding.setProperty('rootBaseDir', rootProject.projectDir.toString())
+def rootDirName = rootProject.projectDir.toString();
+binding.setProperty('rootBaseDir', rootDirName)
 
-ext.us = new GroovyShell(binding).parse(new File('scripts/utils/utils.gradle'))
-ext.paths = new GroovyShell(binding).parse(new File('scripts/utils/paths.gradle'))
+ext.us = new GroovyShell(binding).parse(new File(rootDirName+'/scripts/utils/utils.gradle'))
+ext.paths = new GroovyShell(binding).parse(new File(rootDirName+'/scripts/utils/paths.gradle'))
 //we need to initalize it as it seems that there is no access to project
 // properties form script
 
