@@ -71,7 +71,7 @@ task(clone) {
 //TODO move repos to settings.gradle as list
 task(downloadAll) {
     def arts = [["https://download.jboss.org/wildfly/19.0.0.Final/wildfly-19.0.0.Final.zip", "wildfly-19.0.0.Final"],
-                ["https://apache.mirrors.tworzy.net/tomcat/tomcat-10/v10.0.0-M4/bin/apache-tomcat-10.0.0-M4.zip", "apache-tomcat-10.0.0-M4"]]
+                ["https://apache.mirrors.tworzy.net/tomcat/tomcat-9/v9.0.39/bin/apache-tomcat-9.0.39.zip", "apache-tomcat-10.0.0-M4"]]
     us.ensureDirExists(paths.getTempDir())
     //download to temp dir
     arts.collect {
